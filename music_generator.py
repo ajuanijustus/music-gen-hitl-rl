@@ -96,16 +96,18 @@ class MusicGenerator:
             action (tuple): Action to apply.
                 - action_type (int): Type of action.
                 - index (int): Index of the element to modify.
-                - value (int/float): New value for the element.
+                - pitch_value (int/float): New pitch value for the note.
+                - percussion_value (int/float): New pitch value for the percussion.
+                - duration_value (int/float): New duration value for the note.
         """
-        action_type, index, value = action
+        action_type, index, pitch_value, percussion_value, duration_value = action
 
         if action_type == 0:  # Change pitch
-            track_array[index][0] = value
+            track_array[index][0] = pitch_value
         elif action_type == 1:  # Change duration
-            track_array[index][1] = value
+            track_array[index][1] = duration_value
         elif action_type == 2:  # Change percussion pitch
-            track_array[index][2] = value
+            track_array[index][2] = percussion_value
         elif action_type == 3:  # Remove a note
             track_array.pop(index)
 

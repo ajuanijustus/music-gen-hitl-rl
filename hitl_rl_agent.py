@@ -1,69 +1,85 @@
 import random
 import copy
+import logging
+import tensorflow as tf
+from tensorflow.keras import layers
+
+# Configure the logger
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.getLogger().setLevel(logging.DEBUG)
 
 class HITL_RL_Agent:
     """
     An Agent that uses Human-in-the-Loop Reinforcement Learning to modify melodies.
     """
 
-    def __init__(self, generator, ui, total_episodes, learning_rate, discount_factor):
+    def __init__(self, generator, total_episodes, learning_rate, discount_factor):
         """
         Initialize the HITL_RL_Agent.
 
         Args:
             generator: The melody generator.
-            ui: The user interface for feedback collection and melody playback.
             total_episodes: The total number of episodes to run.
             learning_rate: The learning rate for Q-learning updates.
             discount_factor: The discount factor for future rewards in Q-learning.
         """
         self.generator = generator
-        self.ui = ui
         self.total_episodes = total_episodes
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.q_table = {}
         
-    def run(self):
+    def update_q(self, track_array, reward):
         """
-        Run the HITL_RL_Agent to modify melodies over multiple episodes.
+        Ran over multiple episodes and step to for the HITL_RL_Agent to update q table and modify melodies.
         """
-        for episode in range(self.total_episodes):
-            track_array = self.generator.generate_random_track_array(array_length=8)
+        state = tuple(tuple(note) for note in track_array)
+        action = (
+            random.randint(0, 2),
+            random.randint(0, len(track_array) - 1),
+            random.choice(self.generator.note_options),
+            random.choice(self.generator.percussion_options),
+            random.choice(self.generator.duration_options),
+        )
 
-            # Reinforcement Learning loop
-            for step in range(len(track_array)):
-                modified_midi_path = f"midiFiles/modified_melody_ep_{episode}_step_{step}.mid"
-                self.generator.generate_midi(modified_midi_path, track_array=track_array)
-                self.ui.play_melody(modified_midi_path)
+        logging.info(f'Random action: {action}')
+        
+        new_track_array = copy.deepcopy(track_array)
+        self.generator.apply_action(new_track_array, action)
+        new_state = tuple(tuple(note) for note in new_track_array)
 
-                reward = random.randint(1, 10)  # Simulated user feedback rating
+        # Q-Learning
+        current_q = self.q_table.get((state, action), 0)
+        max_next_q = max(
+            [self.q_table.get((new_state, a), 0) for a in range(5)]
+        )
+        updated_q = current_q + self.learning_rate * (
+            reward + self.discount_factor * max_next_q - current_q
+        )
+        self.q_table[(state, action)] = updated_q
 
-                state = tuple(tuple(note) for note in track_array)
-                action = (
-                    random.randint(0, 3),
-                    random.randint(0, len(track_array) - 1),
-                    random.choice(self.generator.note_options),
-                )
-                
-                new_track_array = copy.deepcopy(track_array)
-                self.generator.apply_action(new_track_array, action)
-                new_state = tuple(tuple(note) for note in new_track_array)
+        logging.info(f'Updated Q: {updated_q}')
 
-                # Q-learning update
-                current_q = self.q_table.get((state, action), 0)
-                max_next_q = max(
-                    [self.q_table.get((new_state, a), 0) for a in range(5)]
-                )
-                updated_q = current_q + self.learning_rate * (
-                    reward + self.discount_factor * max_next_q - current_q
-                )
-                self.q_table[(state, action)] = updated_q
+        return new_track_array
 
-                track_array = new_track_array
+    def select_best_action_using_ai(self, state):
+        # Convert the state to a suitable format (e.g., flatten the tuple of tuples)
+        state_array = np.array(state).flatten()
 
-            # Save and play the modified melody at the end of the episode
-            print(f"Final tune of episode {episode} playing 🎶")
-            modified_midi_path = f"midiFiles/modified_melody_ep_{episode}.mid"
-            self.generator.generate_midi(modified_midi_path, track_array=track_array)
-            self.ui.play_melody(modified_midi_path)
+        # Use the trained AI model to predict the action probabilities
+        action_probabilities = self.ai_model.predict(np.array([state_array]))[0]
+
+        # Select the action with the highest probability
+        selected_action = np.argmax(action_probabilities)
+        return selected_action
+
+    def train_ai_model(self, X, y, num_epochs=10):
+        # Define and train the AI model
+        self.ai_model = tf.keras.Sequential([
+            layers.Dense(128, activation='relu', input_shape=(len(X[0]),)),
+            layers.Dense(64, activation='relu'),
+            layers.Dense(5, activation='softmax')  # 5 actions in this example
+        ])
+
+        self.ai_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        self.ai_model.fit(np.array(X), np.array(y), epochs=num_epochs)
