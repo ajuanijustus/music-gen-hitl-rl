@@ -1,16 +1,14 @@
 import pygame
 import sys
 import logging
+from datetime import datetime
+
 from music_generator import *
 from hitl_rl_agent import *
 
 # Initialize the mixer module
 pygame.mixer.init()
 pygame.font.init()
-
-# Configure the logger
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
 
 # Button Class
 class Button:
@@ -156,7 +154,7 @@ BLACK = 18
 WHITE = 255
 
 # MIDI settings
-user_id = 000000
+user_id = '000000'
 base_note = 60
 tempo = 90
 volume = 90
@@ -202,7 +200,7 @@ buttonPercussion = Button(buttonChords.x + buttonChords.width + BUTTON_PADDING, 
 buttonScale = Button(buttonPercussion.x + buttonPercussion.width + BUTTON_PADDING, Y_PADDING + 50, "Scale: Major")
 
 inputs = [
-    IntInput(buttonStartNew.x + buttonStartNew.width + TEXT_PADDING + 100 - 50, 200 + Y_PADDING, "", INPUT_WIDTH + 70, "User ID:"),
+    IntInput(buttonStartNew.x + buttonStartNew.width + TEXT_PADDING + 100 - 50, 200 + Y_PADDING, str(user_id), INPUT_WIDTH + 70, "User ID:"),
     IntInput(buttonStartNew.x + TEXT_PADDING + 50, 290 + Y_PADDING, "", INPUT_WIDTH, "User Rating (0-9):"),
     IntInput(X_PADDING + TEXT_PADDING, 125 + Y_PADDING, str(base_note), INPUT_WIDTH, "Base Note: "),
     IntInput(110 + TEXT_PADDING, 125 + Y_PADDING, str(tempo), INPUT_WIDTH, "Tempo: "),
@@ -212,7 +210,6 @@ inputs = [
 ]
 
 # Music playback state
-play = False
 waiting = False
 reward = None
 
@@ -254,7 +251,7 @@ while True:
     # Check if StartNew button hovered/clicked
     if buttonStartNew.hovered(*pygame.mouse.get_pos()) and mouse_pressed:
         if inputs[0].text != "":
-            user_id = int(inputs[0].text)
+            user_id = inputs[0].text
         if inputs[2].text != "":
             base_note = int(inputs[2].text)
         if inputs[3].text != "":
@@ -281,9 +278,15 @@ while True:
         logging.info(f'Chords toggle: {chords_flag}')
         logging.info(f'Percussion toggle: {percussion_flag}')
 
+        # Configure the logger
+        current_datetime = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        log_filename = 'hitl_rl_'+user_id+'_'+str(current_datetime)+'.log'
+        logging.basicConfig(filename=log_filename, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+        logging.getLogger().setLevel(logging.DEBUG)
+
         # Load the music generator and the RL agent
-        generator = MusicGenerator(base_note, scale_type, tempo, volume, chords_flag, chord_freq, track_array_length)
-        hitl_rl = HITL_RL_Agent(generator, total_episodes = 10, learning_rate = 0.1, discount_factor = 0.9)
+        generator = MusicGenerator(base_note, scale_type, tempo, volume, chords_flag, percussion_flag, chord_freq, track_array_length)
+        hitl_rl = HITL_RL_Agent(generator, total_episodes = 10, learning_rate = 0.1, discount_factor = 0.9, log_filename=log_filename)
         track_array = generator.generate_random_track_array(array_length=track_array_length)
         
         modified_midi_path = f"midiFiles/modified_melody_ep_{episode}_step_{step}.mid"
@@ -372,11 +375,11 @@ while True:
             logging.info(f'Track array for episode {episode}, step {step}: {track_array}')
             logging.info(f'User rating for episode {episode}, step {step}: {reward}')
 
-            track_array = hitl_rl.update_q(track_array, reward)
+            track_array = hitl_rl.update_q(track_array, reward, episode)
 
             step += 1
 
-            if step >= len(track_array):
+            if step >= track_array_length:
                 episode += 1
                 step = 0
 

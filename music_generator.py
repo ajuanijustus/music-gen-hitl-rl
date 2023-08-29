@@ -1,4 +1,5 @@
 import random
+import math
 from midiutil import MIDIFile
 
 class MusicGenerator:
@@ -13,7 +14,7 @@ class MusicGenerator:
         percussion_options (list): List of available percussion pitches.
     """
 
-    def __init__(self, base_note=60, scale_type="major", tempo=90, volume=100, chords=False, chord_freq=2, array_length=8):
+    def __init__(self, base_note=60, scale_type="major", tempo=90, volume=100, chords=False, percussion=True, chord_freq=2, array_length=8):
         """
         Initializes a MelodyGenerator instance.
 
@@ -36,6 +37,7 @@ class MusicGenerator:
         self.tempo = tempo
         self.volume = volume
         self.chords = chords
+        self.percussion = percussion
         self.chord_freq = chord_freq
         self.array_length = array_length
         self.scale = self._generate_scale(base_note, scale_type)
@@ -55,22 +57,29 @@ class MusicGenerator:
         MyMIDI = MIDIFile(1)
         MyMIDI.addTempo(track=0, time=t, tempo=self.tempo)
 
-        for note_pitch, note_duration, percussion_pitch in track_array:
+        melody_array, percussion_array = track_array[0], track_array[1]
+
+        for note_pitch, note_duration in melody_array:
             # Add note
             MyMIDI.addNote(track=0, channel=0, pitch=note_pitch, time=t, duration=note_duration, volume=self.volume)
-
-            # Add percussion
-            MyMIDI.addNote(0, self.percussion_channel, percussion_pitch, t, 0.25, 100)
 
             # Add chords
             if self.chords and (t % self.chord_freq == 0):
                 chord_pitches = self._get_chord_pitches(note_pitch, self.scale_type)
-                volume_diff_for_chords = 10
+                volume_diff_for_chords = 15
                 for chord_pitch in chord_pitches:
                     MyMIDI.addNote(track=0, channel=1, pitch=chord_pitch, time=t, duration=self.chord_freq, volume=(self.volume - volume_diff_for_chords))
 
             # Update time
             t += note_duration
+
+        # Add percussion
+        if self.percussion:
+            t = 0
+            for percussion_pitch in percussion_array:
+                volume_diff_for_percussion = 20
+                MyMIDI.addNote(track=0, channel=self.percussion_channel, pitch=percussion_pitch, time=t, duration=0.25, volume=(self.volume - volume_diff_for_percussion))
+                t += 0.25
 
         with open(midi_path, "wb") as output_file:
             MyMIDI.writeFile(output_file)
@@ -83,9 +92,19 @@ class MusicGenerator:
             array_length (int): Length of the track array.
 
         Returns:
-            list: Randomly generated array of [note_pitch, note_duration, percussion_pitch].
+            list: Randomly generated array of [note_pitch, note_duration, percussion_array].
         """
-        return [[random.choice(self.scale), random.choice(self.duration_options), random.choice(self.percussion_options)] for _ in range(array_length)]
+        melody_array = [[random.choice(self.scale), random.choice(self.duration_options)] for _ in range(array_length)]
+        
+        t = sum([d for n, d in melody_array]) * 4
+
+        percussion_array = [random.choice(self.percussion_options) for _ in range(array_length)]
+        if len(percussion_array) > t:
+            percussion_array = percussion_array[:int(t)]
+        else:
+            percussion_array = (percussion_array * math.ceil(t/16))[:int(t)]
+
+        return [melody_array, percussion_array]
 
     def apply_action(self, track_array, action):
         """
@@ -96,19 +115,20 @@ class MusicGenerator:
             action (tuple): Action to apply.
                 - action_type (int): Type of action.
                 - index (int): Index of the element to modify.
-                - pitch_value (int/float): New pitch value for the note.
-                - percussion_value (int/float): New pitch value for the percussion.
-                - duration_value (int/float): New duration value for the note.
         """
-        action_type, index, pitch_value, percussion_value, duration_value = action
+        action_type, index = action
 
-        if action_type == 0:  # Change pitch
-            track_array[index][0] = pitch_value
-        elif action_type == 1:  # Change duration
-            track_array[index][1] = duration_value
-        elif action_type == 2:  # Change percussion pitch
-            track_array[index][2] = percussion_value
-        elif action_type == 3:  # Remove a note
+        if action_type == 0:  # Increase note pitch +1
+            track_array[0][index][0] += 1
+        elif action_type == 1:  # Decrease note pitch -1
+            track_array[0][index][0] -= 1
+        elif action_type == 2:  # Increase note duration +0.25 (capped at 1)
+            track_array[0][index][1] = min(track_array[0][index][1] + 0.25, 1)
+        elif action_type == 3:  # Decrease note duration -0.25 (capped at 0)
+            track_array[0][index][1] = max(track_array[0][index][1] - 0.25, 0)
+        elif action_type == 4:  # Change percussion pitch
+            track_array[1][index] = random.choice([p for p in self.percussion_options if p != track_array[1][index]])
+        elif action_type == 5:  # Remove a note
             track_array.pop(index)
 
     def _generate_scale(self, base_note=60, scale_type='major'):
