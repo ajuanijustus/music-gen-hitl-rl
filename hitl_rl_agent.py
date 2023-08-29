@@ -8,26 +8,25 @@ class HITL_RL_Agent:
     An Agent that uses Human-in-the-Loop Reinforcement Learning to modify melodies.
     """
 
-    def __init__(self, generator, total_episodes, learning_rate, discount_factor, log_filename):
+    def __init__(self, generator, learning_rate, discount_factor, initial_epsilon, decay_rate, log_filename):
         """
         Initialize the HITL_RL_Agent.
         
         Args:
             generator: The melody generator.
-            total_episodes: The total number of episodes to run.
             learning_rate: The learning rate for Q-learning updates.
             discount_factor: The discount factor for future rewards in Q-learning.
+            log_filename: The logger filename based on user_id and datetime.
         """
         self.generator = generator
-        self.total_episodes = total_episodes
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.q_table = {}
-        self.initial_epsilon = 0.5
-        self.decay_rate = 0.01
+        self.initial_epsilon = initial_epsilon
+        self.decay_rate = decay_rate
 
         # Configure the logger
-        logging.basicConfig(filename=log_filename, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename=log_filename, encoding='utf-8', format='%(name)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(logging.DEBUG)
 
     def log_q_table():
@@ -44,6 +43,7 @@ class HITL_RL_Agent:
                 random.randint(0, 4),
                 random.randint(0, len(track_array[0]) - 1)
             )
+            logging.info(f'Selected random action: {action}')
         else:
             # Exploit: Choose the action with the highest Q-value for the current state
             # Filter for the best action from combination all possible actions for the state already explored, defaulting to (0,0) if not available
@@ -52,8 +52,7 @@ class HITL_RL_Agent:
                 key=lambda x: x[1]
             )[0]
             action = best_action
-
-        logging.info(f'Selected action: {action}')
+            logging.info(f'Selected best action: {action}')
         
         new_track_array = copy.deepcopy(track_array)
         self.generator.apply_action(new_track_array, action)

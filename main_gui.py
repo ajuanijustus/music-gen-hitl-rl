@@ -161,6 +161,9 @@ volume = 90
 chord_freq = 4
 track_array_length = 8
 
+# RL settings
+total_episodes = 10
+
 scale_type = 'major'
 chords_flag = False
 percussion_flag = True
@@ -266,6 +269,12 @@ while True:
         episode = 0
         step = 0
 
+        # Configure the logger
+        current_datetime = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        log_filename = 'logs/hitl_rl_'+user_id+'_'+str(current_datetime)+'.log'
+        logging.basicConfig(filename=log_filename, encoding='utf-8', format='%(name)s - %(levelname)s - %(message)s')
+        logging.getLogger().setLevel(logging.DEBUG)
+
         # Reinforcement Learning loop
         logging.info(f'Starting new HITL RL model training with the following configuration:')
         logging.info(f'User ID: {user_id}')
@@ -278,15 +287,9 @@ while True:
         logging.info(f'Chords toggle: {chords_flag}')
         logging.info(f'Percussion toggle: {percussion_flag}')
 
-        # Configure the logger
-        current_datetime = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        log_filename = 'hitl_rl_'+user_id+'_'+str(current_datetime)+'.log'
-        logging.basicConfig(filename=log_filename, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-        logging.getLogger().setLevel(logging.DEBUG)
-
         # Load the music generator and the RL agent
         generator = MusicGenerator(base_note, scale_type, tempo, volume, chords_flag, percussion_flag, chord_freq, track_array_length)
-        hitl_rl = HITL_RL_Agent(generator, total_episodes = 10, learning_rate = 0.1, discount_factor = 0.9, log_filename=log_filename)
+        hitl_rl = HITL_RL_Agent(generator, learning_rate = 0.1, discount_factor = 0.9, initial_epsilon = 0.5, decay_rate = 0.01, log_filename=log_filename)
         track_array = generator.generate_random_track_array(array_length=track_array_length)
         
         modified_midi_path = f"midiFiles/modified_melody_ep_{episode}_step_{step}.mid"
@@ -312,7 +315,7 @@ while True:
 
         # Reinforcement Learning loop
         if step == 0:
-            track_array = generator.generate_random_track_array(array_length=8)
+            track_array = generator.generate_random_track_array(array_length=track_array_length)
         
         modified_midi_path = f"midiFiles/modified_melody_ep_{episode}_step_{step}.mid"
         generator.generate_midi(modified_midi_path, track_array=track_array)
@@ -365,26 +368,30 @@ while True:
 
     if waiting:
         display_episode_step(episode, step)
-        try:
-            # reward = random.randint(1, 10) # for code testing
-            reward = int(inputs[1].text)
-        except:
-            ...
+        if episode<total_episodes:
+            try:
+                # reward = random.randint(1, 10) # for code testing
+                reward = int(inputs[1].text)
+            except:
+                ...
 
-        if reward:
-            logging.info(f'Track array for episode {episode}, step {step}: {track_array}')
-            logging.info(f'User rating for episode {episode}, step {step}: {reward}')
+            if reward:
+                logging.info(f'Track array for episode {episode}, step {step}: {track_array}')
+                logging.info(f'User rating for episode {episode}, step {step}: {reward}')
 
-            track_array = hitl_rl.update_q(track_array, reward, episode)
+                track_array = hitl_rl.update_q(track_array, reward, episode)
 
-            step += 1
+                step += 1
 
-            if step >= track_array_length:
-                episode += 1
-                step = 0
+                if step >= track_array_length:
+                    logging.info(f'EPISODE {episode} OF RL LOOP COMPLETE!')
+                    step = 0
+                    episode += 1
 
-                logging.info(f'Episode {episode} of RL loop complete!')
-
+                waiting = False
+                reward = None
+        else:
+            logging.info(f'RL LOOP COMPLETE!')
             waiting = False
             reward = None
 

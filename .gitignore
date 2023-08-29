@@ -162,3 +162,7 @@ cython_debug/
 # MIDI files
 midiFiles/
 .mid
+
+# .log files
+logs/
+.log
