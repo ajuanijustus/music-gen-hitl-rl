@@ -2,6 +2,7 @@ import random
 import copy
 import logging
 import itertools
+import pickle
 
 class HITL_RL_Agent:
     """
@@ -29,8 +30,16 @@ class HITL_RL_Agent:
         logging.basicConfig(filename=log_filename, encoding='utf-8', format='%(name)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(logging.DEBUG)
 
-    def log_q_table():
-        logging.info(f'Updated Q Table: {self.q_table}')
+    def log_q_table(self):
+        logging.info(f'Final Q Table: {self.q_table}')
+
+    def save_q_table(self, user_id):
+        with open('q_table_'+user_id+'.pkl', 'wb') as f:
+            pickle.dump(self.q_table, f)
+
+    def load_q_table(self, user_id):
+        with open('q_table_'+user_id+'.pkl', 'rb') as f:
+            self.q_table = pickle.load(f)
         
     def update_q(self, track_array, reward, episode_number):
         state = (tuple(tuple(note) for note in track_array[0]), tuple(track_array[1]))

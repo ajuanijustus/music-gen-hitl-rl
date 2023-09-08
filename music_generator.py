@@ -125,7 +125,7 @@ class MusicGenerator:
         elif action_type == 2:  # Increase note duration +0.25 (capped at 1)
             track_array[0][index][1] = min(track_array[0][index][1] + 0.25, 1)
         elif action_type == 3:  # Decrease note duration -0.25 (capped at 0)
-            track_array[0][index][1] = max(track_array[0][index][1] - 0.25, 0)
+            track_array[0][index][1] = max(track_array[0][index][1] - 0.25, 0.25)
         elif action_type == 4:  # Change percussion pitch
             track_array[1][index] = random.choice([p for p in self.percussion_options if p != track_array[1][index]])
         elif action_type == 5:  # Remove a note

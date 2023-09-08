@@ -394,6 +394,9 @@ while True:
             logging.info(f'RL LOOP COMPLETE!')
             waiting = False
             reward = None
+            hitl_rl.log_q_table()
+            hitl_rl.save_q_table(user_id)
+            hitl_rl.load_q_table(user_id)
 
     # Update the screen
     pygame.display.flip()
