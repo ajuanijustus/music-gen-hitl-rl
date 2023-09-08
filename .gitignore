@@ -166,3 +166,6 @@ midiFiles/
 # .log files
 logs/
 .log
+
+# .pkl files
+.pkl
