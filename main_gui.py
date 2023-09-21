@@ -202,6 +202,9 @@ buttonChords = Button(90 + X_PADDING, Y_PADDING + 50, "Chords: Off")
 buttonPercussion = Button(buttonChords.x + buttonChords.width + BUTTON_PADDING, Y_PADDING + 50, "Percussion: On")
 buttonScale = Button(buttonPercussion.x + buttonPercussion.width + BUTTON_PADDING, Y_PADDING + 50, "Scale: Major")
 
+buttonSaveModel = Button(150 + X_PADDING, 340 + Y_PADDING, "Save Model")
+buttonLoadModel = Button(buttonSaveModel.x + buttonSaveModel.width + 25, 340 + Y_PADDING, "Load Model")
+
 inputs = [
     IntInput(buttonStartNew.x + buttonStartNew.width + TEXT_PADDING + 100 - 50, 200 + Y_PADDING, str(user_id), INPUT_WIDTH + 70, "User ID:"),
     IntInput(buttonStartNew.x + TEXT_PADDING + 50, 290 + Y_PADDING, "", INPUT_WIDTH, "User Rating (0-9):"),
@@ -243,7 +246,7 @@ while True:
     screen.fill([BLACK] * 3)
 
     # Draw buttons
-    for button in [buttonStartNew, buttonNextTrack, buttonChords, buttonScale, buttonPercussion]:
+    for button in [buttonStartNew, buttonNextTrack, buttonChords, buttonScale, buttonPercussion, buttonSaveModel, buttonLoadModel]:
         button.draw(screen)
 
     for i, input in enumerate(inputs):

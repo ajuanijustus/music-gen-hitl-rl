@@ -43,7 +43,7 @@ class HITL_RL_Agent:
         
     def update_q(self, track_array, reward, episode_number):
         state = (tuple(tuple(note) for note in track_array[0]), tuple(track_array[1]))
-
+        
         epsilon = self.initial_epsilon * (self.decay_rate ** episode_number)
 
         if random.random() < epsilon or episode_number<1:

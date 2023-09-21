@@ -1,12 +1,11 @@
-# Music Generation and Reinforcement Learning GUI
+# Music Generation using Human-In-The-Loop Reinforcement Leanring
 
-This repository contains a graphical user interface (GUI) application that combines music generation and reinforcement learning (RL) using the Pygame library.
+This repository contains the code base for my MSc Comp Sci dissertation that uses HITL RL to generate music.
 
-## Prerequisites
+## Abstract
+This dissertation presents an approach that combines Human-In-The-Loop Reinforcement Learning (HITL RL) with principles derived from music theory to facilitate the real-time generation of musical compositions. HITL RL, previously employed in diverse applications such as modelling humanoid robot mechanics and enhancing language models, harnesses human feedback to refine training processes. In this study, we leverage constraints and principles grounded in music theory with the HITL RL framework, employing the Markov Decision Process and Greedy Epsilon Q-Learning Algorithm. The system generates musical tracks (compositions), continuously enhancing its quality through iterative human-in-the-loop feedback. The reward function for this process is the subjective musical taste of the user.
 
-- Python 3.x
-- pygame library (`pip install pygame`)
-- midiutil library (`pip install midiutil`)
+Keywords: Reinforcement Learning, Human-In-The-Loop, Music Generation, HITL RL, Algorithmic Music, Audio Machine Learning
 
 ## Usage
 
