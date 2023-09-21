@@ -1,4 +1,4 @@
-# Music Generation using Human-In-The-Loop Reinforcement Leanring
+# Music Generation using Human-In-The-Loop Reinforcement Learning
 
 This repository contains the code base for my MSc Comp Sci dissertation that uses HITL RL to generate music.
 
